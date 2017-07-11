@@ -6,8 +6,6 @@ header("Access-Control-Allow-Headers: X-Requested-With");
 header('Content-Type: application/json; charset=utf-8');
 header('P3P: CP="IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA"');
 
-//require __DIR__.'/../vendor/slim/slim/Slim/Slim.php';
-
 require __DIR__.'/../vendor/autoload.php'; 
 $app = new \Slim\Slim();
 
@@ -60,6 +58,37 @@ function autenticar(\Slim\Route $ruta)
 			$response["message"] = "Acceso denegado. Falta token";
 			echoResponse(400,$response);
 			$app->stop();
+	}
+}
+
+function verificarParametrosRequeridos($camposReq)
+{
+	$error = false;
+	$error_fields = "";
+	$request_params = array();
+	$request_params = $_REQUEST;
+	if ($_SERVER['REQUEST_METHOD'] == 'PUT')
+	{
+		$app = \Slim\Slim::getInstance();
+		parse_str($app->request()->getBody(), $request_params);
+	}
+	foreach ($camposReq as $campo)
+	{
+		if (! isset($request_params[$campo]) || strlen(trim($request_params[$campo])) <= 0)
+		{
+			$error = true;
+			$error_fields .= $campo . ', ';
+		}
+	}
+
+	if ($error)
+	{
+		$response = array();
+		$app = Slim\Slim::getInstance();
+		$response["error"] = true;
+		$response["message"] = 'Campos requeridos :' . substr($error_fields, 0, -2). 'faltan o estan vacios';
+		echoResponse(400,$response);
+		$app->stop();
 	}
 }
 ?>
