@@ -3,11 +3,14 @@ header("Access-Control-Allow-Origin: *");
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: PUT, GET, POST, DELETE, OPTIONS');
 header("Access-Control-Allow-Headers: X-Requested-With");
-header('Content-Type: application/json; charset=utf-8');
+header('Content-Type: text/html; charset=utf-8');
 header('P3P: CP="IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA"');
 
-require __DIR__.'/../vendor/autoload.php'; 
+require __DIR__.'/../vendor/autoload.php';
+include_once(__DIR__.'/../include/Config.php');
 $app = new \Slim\Slim();
+
+//metodo get
 
 $app -> get('/auto',function()
 {
@@ -17,6 +20,31 @@ $app -> get('/auto',function()
 	$response["message"] = "Autos cargados: ";
 	$response["autos"] = $autos;
 	echoResponse(200,$response);
+});
+
+//metodo post
+
+$app->post('/auto','autenticar',function() use ($app)
+{
+	verificarParametrosRequeridos(array('make', 'model', 'year', 'msrp'));
+	$response = array();
+	$param['make'] = $app->request->post('make');
+	$param['model'] = $app->request->post('model');
+	$param['year'] = $app->request->post('year');
+	$param['msrp'] = $app->request->post('msrp');
+
+	if (is_array($param)) 
+	{
+		$response["error"] = false;
+		$response["message"] = "Auto creado satisfactoriamente";
+		$response = $param;
+	}
+	else
+	{
+		$response["error"] = true;
+		$response["message"] = "Error al crear el auto";
+	}
+	echoResponse(201,$response);
 });
 
 $app->run();
@@ -38,12 +66,17 @@ function autenticar(\Slim\Route $ruta)
 	$headers = apache_request_headers();
 	$response = array();
 	$app = \Slim\Slim::getInstance();
-	if (isset($headers['Authorization'])) {
-		$token = $headers['Authorization'];
+	$cad = "";
+	foreach ($headers as $header => $value) 
+	{
+		$cad .= $header.' : '.$value;
+	}
+	if (isset($headers['authorization'])) {
+		$token = $headers['authorization'];
 		if (!($token == API_KEY))
 		{
 			$response["error"] = true;
-			$response["message"] = "Acceso denegado. token inválido";
+			$response["message"] = "Acceso denegado. token inválido v ". API_KEY;
 			echoResponse(401,$response);
 			$app->stop();
 		}
@@ -55,7 +88,7 @@ function autenticar(\Slim\Route $ruta)
 	else
 	{
 		$response["error"] = true;
-			$response["message"] = "Acceso denegado. Falta token";
+			$response["message"] = "Acceso denegado. Falta token " . $cad ;
 			echoResponse(400,$response);
 			$app->stop();
 	}
